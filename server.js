@@ -17,14 +17,19 @@ const crossword = XLSX.utils.sheet_to_json(sheet);
 let buzzList = [];
 let isOpen = false;
 
+const players = {}; // socket.id => name
 io.on("connection", (socket) => {
 
+  // Mở/đóng buzz
   socket.on("buzz", (name) => {
     if (!isOpen) return;
     if (!buzzList.find(u => u.id === socket.id)) {
       buzzList.push({ id: socket.id, name });
       io.emit("buzzUpdate", buzzList);
     }
+    // Lưu player
+    players[socket.id] = name;
+    io.emit("playerList", Object.values(players));
   });
 
   socket.on("openBuzz", () => {
@@ -37,43 +42,29 @@ io.on("connection", (socket) => {
     isOpen = false;
   });
 
+  // Cung cấp data câu hỏi
   socket.on("getCrossword", () => {
     socket.emit("crosswordData", crossword);
   });
 
+  // Lật hàng ô chữ
   socket.on("revealRow", (row) => {
     io.emit("revealRow", row);
   });
 
-  let players = {}; // socket.id => name
-
-io.on("connection", (socket)=>{
-
-  socket.on("buzz", (name)=>{
-    if(!isOpen) return;
-    if(!buzzList.find(u=>u.id===socket.id)){
-      buzzList.push({id:socket.id,name});
-      io.emit("buzzUpdate",buzzList);
-    }
-    // Lưu player
+  // Player đoán từ khóa
+  socket.on("playerGuess", ({ name, guess }) => {
     players[socket.id] = name;
+    io.emit("playerGuess", { name, guess });
     io.emit("playerList", Object.values(players));
   });
 
-  socket.on("playerGuess", ({name, guess})=>{
-    players[socket.id] = name;
-    io.emit("playerGuess", {name, guess});
-    io.emit("playerList", Object.values(players));
-  });
-
-  socket.on("disconnect", ()=>{
+  // Player disconnect
+  socket.on("disconnect", () => {
     delete players[socket.id];
     io.emit("playerList", Object.values(players));
   });
-
-  // ... các event khác
 });
 
-});
-
-server.listen(3000, () => console.log("🚀 Server chạy"));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Server chạy tại port ${PORT}`));
