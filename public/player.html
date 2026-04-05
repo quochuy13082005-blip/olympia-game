@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Player</title>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body style="text-align:center;
+             color:white;
+             background-image: url('nen_game.jpg'); 
+             background-size: cover;
+             background-position: center;
+             background-repeat: no-repeat;">
+
+<h1 style="font-size:60px;color:gold;margin-top:20px;">OLYMPIA</h1>
+
+<h2> ENTER NAME </h2> 
+<input id="name"><br><br>
+
+<!-- Button bấm chuông -->
+<button onclick="buzz()" style="font-size:40px;background:red;color:white">🔴 PRESS BUZZER</button> 
+
+<!-- Button đoán từ khóa --> 
+<button onclick="guessKeyword()" style="font-size:30px;background:green;color:white">🎯 GUESS KEYWORD</button> 
+
+<script>
+const socket = io();
+
+// Bấm chuông
+function buzz(){
+  const name = document.getElementById("name").value.trim();
+  if(!name) { alert("Enter name before pressing the buzzer!"); return; }
+  socket.emit("buzz", name);
+}
+
+// Đoán từ khóa
+function guessKeyword(){
+  const name = document.getElementById("name").value.trim();
+  if(!name) { alert("Enter your name before guessing!"); return; }
+
+  // Gửi lên host để hiển thị
+  socket.emit("playerGuess", { name: name, guess: "Đoán từ khóa" });
+  alert("🎯 Guess already submitted!!");
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Olympia Game</title>
+<style>
+body { font-family: Arial; text-align: center; background:#111; color:white; }
+#grid { margin:20px auto; }
+.cell { width:50px; height:50px; perspective:1000px; margin:2px; }
+.inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:0.6s; }
+.inner.flip { transform:rotateY(180deg); }
+.front, .back { position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:22px; backface-visibility:hidden; }
+.front { background:#333; } .back { background:green; transform:rotateY(180deg); }
+button { margin:5px; padding:5px; }
+#questions div:hover { background:#333; }
+</style>
+</head>
+<body>
+
+<h1>🏆 Olympia</h1>
+
+<h3>QUESTION</h3>
+<div id="questions" style="max-width:600px;margin:auto;text-align:left"></div>
+
+<div id="grid"></div>
+<h2 id="keyword">________</h2>
+<h2 id="guessDisplay" style="color:cyan"></h2>
+
+<br>
+<button onclick="openBuzz()">ENABLE</button>
+<button onclick="closeBuzz()">BUZZER OFF </button> 
+<ul id="buzz"></ul>
+
+<h3>LIST OF MEMBERS </h3> //
+<ul id="playerList"></ul>
+
+<audio id="correctSound" src="correct.mp3"></audio>
+<audio id="wrongSound" src="wrong.mp3"></audio>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let data = [];
+let openedRows = [];
+
+
+
+// Lấy dữ liệu
+socket.emit("getCrossword");
+socket.on("crosswordData", (qs)=>{
+  data = qs;
+  draw();
+  renderQuestions();
+});
+
+// Render câu hỏi ẩn kèm nút
+function renderQuestions(){
+  const box = document.getElementById("questions");
+  box.innerHTML = "";
+  data.forEach((q, i)=>{
+    box.innerHTML += `
+      <div id="q-${i}" style="margin:5px 0; padding:5px; border-radius:5px; display:flex; justify-content:space-between; align-items:center">
+        <span id="clue-${i}"></span>
+        <div>
+          <button onclick="showClue(${i})">Show Question</button>
+          <button onclick="revealAnswer(${i})">Answer</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// Hiện câu hỏi
+function showClue(row){
+  const clueEl = document.getElementById(`clue-${row}`);
+  clueEl.innerText = data[row].clue;
+  const btn = clueEl.parentElement.querySelector('button');
+  if(btn) btn.disabled = true;
+}
+
+// Vẽ ô chữ mỗi câu trả lời 1 hàng
+function draw() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  data.forEach((q,row)=>{
+    const rowDiv = document.createElement("div");
+    rowDiv.style.display="flex"; rowDiv.style.justifyContent="center"; rowDiv.style.marginBottom="5px";
+
+    for(let i=0;i<q.answer.length;i++){
+      const cell = document.createElement("div"); cell.className="cell";
+      const inner = document.createElement("div"); inner.className="inner"; inner.id=`c-${row}-${i}`;
+      const front = document.createElement("div"); front.className="front";
+      const back = document.createElement("div"); back.className="back"; back.innerText=q.answer[i];
+      inner.appendChild(front); inner.appendChild(back); cell.appendChild(inner); rowDiv.appendChild(cell);
+    }
+    grid.appendChild(rowDiv);
+  });
+}
+
+// Lật đáp án
+function revealAnswer(row){
+  const q = data[row];
+  for(let i=0;i<q.answer.length;i++){
+    const inner = document.getElementById(`c-${row}-${i}`);
+    if(inner) inner.classList.add("flip");
+  }
+  updateKeyword();
+}
+
+// Highlight câu hỏi và update từ khóa
+socket.on("revealRow",(row)=>{
+  document.querySelectorAll("#questions div").forEach(el=>{ el.style.color="white"; });
+  const current = document.getElementById(`q-${row}`);
+  if(current){ current.style.color="yellow"; current.style.fontWeight="bold"; }
+  updateKeyword();
+});
+
+// Từ khóa
+function updateKeyword(){
+  let k = "";
+  data.forEach((q,row)=>{
+    const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
+    const letter = inner?.querySelector(".back")?.innerText || "_";
+    k += letter;
+  });
+  document.getElementById("keyword").innerText = k;
+}
+
+// Hiển thị danh sách player
+socket.on("playerList", (list)=>{
+  const ul = document.getElementById("playerList");
+  ul.innerHTML = "";
+  list.forEach((name,i)=>{
+    ul.innerHTML += `<li>${i+1}. ${name}</li>`;
+  });
+});
+
+// Hiển thị đoán từ player
+socket.on("playerGuess",({name,guess})=>{
+  const display = document.getElementById("guessDisplay");
+  display.innerText = `🎤 ${name} đoán: ${guess}`;
+  display.style.opacity=0;
+  let i=0; const blink=setInterval(()=>{
+    display.style.opacity=display.style.opacity==1?0:1;
+    i++; if(i>6){ clearInterval(blink); display.style.opacity=1; }
+  },300);
+});
+
+// Buzz
+socket.on("buzzUpdate",(list)=>{
+  const ul=document.getElementById("buzz"); ul.innerHTML="";
+  list.forEach((u,i)=>{ ul.innerHTML+=`<li>${i+1}. ${u.name}</li>`; });
+});
+
+function openBuzz(){ socket.emit("openBuzz"); }
+function closeBuzz(){ socket.emit("closeBuzz"); }
+
+</script>
+</body>
+</html>
