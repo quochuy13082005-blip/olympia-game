@@ -409,7 +409,7 @@ socket.on("playerList", (list)=>{
 // Hiển thị đoán từ player
 socket.on("playerGuess",({name,guess})=>{
   const display = document.getElementById("guessDisplay");
-  display.innerText = `🎤 ${name} đoán: ${guess}`;
+  display.innerText = `🎤 ${name} guesses: ${guess}`;
   display.style.opacity=0;
   let i=0; const blink=setInterval(()=>{
     display.style.opacity=display.style.opacity==1?0:1;
