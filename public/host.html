@@ -280,17 +280,49 @@ function showClue(row){
 function draw() {
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
-  data.forEach((q,row)=>{
-    const rowDiv = document.createElement("div");
-    rowDiv.style.display="flex"; rowDiv.style.justifyContent="center"; rowDiv.style.marginBottom="5px";
 
-    for(let i=0;i<q.answer.length;i++){
-      const cell = document.createElement("div"); cell.className="cell";
-      const inner = document.createElement("div"); inner.className="inner"; inner.id=`c-${row}-${i}`;
-      const front = document.createElement("div"); front.className="front";
-      const back = document.createElement("div"); back.className="back"; back.innerText=q.answer[i];
-      inner.appendChild(front); inner.appendChild(back); cell.appendChild(inner); rowDiv.appendChild(cell);
+  // tìm vị trí cột keyword lớn nhất để căn giữa
+  const maxLen = Math.max(...data.map(q => q.answer.length));
+  const keywordCol = Math.floor(maxLen / 2); // cột cố định
+
+  data.forEach((q, row) => {
+    const rowDiv = document.createElement("div");
+    rowDiv.style.display = "flex";
+    rowDiv.style.justifyContent = "center";
+    rowDiv.style.marginBottom = "5px";
+
+    for (let col = 0; col < maxLen; col++) {
+
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      const inner = document.createElement("div");
+      inner.className = "inner";
+
+      const front = document.createElement("div");
+      front.className = "front";
+
+      const back = document.createElement("div");
+      back.className = "back";
+
+      // tính vị trí chữ thật trong answer
+      const start = Math.floor((maxLen - q.answer.length) / 2);
+      const index = col - start;
+
+      if (index >= 0 && index < q.answer.length) {
+        inner.id = `c-${row}-${index}`;
+        back.innerText = q.answer[index];
+      } else {
+        front.style.visibility = "hidden";
+        back.style.visibility = "hidden";
+      }
+
+      inner.appendChild(front);
+      inner.appendChild(back);
+      cell.appendChild(inner);
+      rowDiv.appendChild(cell);
     }
+
     grid.appendChild(rowDiv);
   });
 }
@@ -302,7 +334,6 @@ function revealAnswer(row){
     const inner = document.getElementById(`c-${row}-${i}`);
     if(inner) inner.classList.add("flip");
   }
-  updateKeyword();
 }
 
 // Highlight câu hỏi và update từ khóa
@@ -318,8 +349,14 @@ function updateKeyword(){
   let html = "";
 
   data.forEach((q,row)=>{
+    if(!keywordOpened){
+      html += `<span>_</span>`;
+      return;
+    }
+
     const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
     const letter = inner?.querySelector(".back")?.innerText || "_";
+
     html += `<span id="k-${row}">${letter}</span>`;
   });
 
@@ -328,13 +365,16 @@ function updateKeyword(){
 
 //lật toàn bộ chữ keyword
 function revealKeyword(){
+  keywordOpened = true;
+
   data.forEach((q,row)=>{
     const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
     if(inner) inner.classList.add("flip");
   });
-  updateKeyword();
-}
 
+  updateKeyword();
+  animateKeyword();
+}
 // Hiển thị danh sách player
 socket.on("playerList", (list)=>{
   const ul = document.getElementById("playerList");
