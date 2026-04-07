@@ -98,7 +98,7 @@ button:hover {
   width: 55px;
   height: 55px;
   perspective: 1000px;
-  margin: 3px;
+  margin: 0;
 }
 
 .inner {
@@ -185,6 +185,32 @@ button:hover {
 
 #loginBox button {
   font-size: 18px;
+}
+
+/* 🌟 cột keyword luôn sáng */
+.keyword-col .front {
+  border: 2px solid gold;
+  box-shadow: 0 0 10px gold;
+}
+
+/* khi lật thì sáng mạnh hơn */
+.keyword-col .back {
+  background: linear-gradient(145deg, gold, orange) !important;
+  color: black;
+  box-shadow: 
+    0 0 10px gold,
+    0 0 20px orange,
+    0 0 40px yellow;
+}
+
+/* hiệu ứng nhấp nháy nhẹ */
+.keyword-col {
+  animation: pulseGlow 1.5s infinite alternate;
+}
+
+@keyframes pulseGlow {
+  from { box-shadow: 0 0 5px gold; }
+  to { box-shadow: 0 0 20px gold; }
 }
 
 </style>
@@ -281,15 +307,19 @@ function draw() {
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  // tìm vị trí cột keyword lớn nhất để căn giữa
   const maxLen = Math.max(...data.map(q => q.answer.length));
-  const keywordCol = Math.floor(maxLen / 2); // cột cố định
+  const keywordCol = Math.floor(maxLen / 2);
 
   data.forEach((q, row) => {
+
     const rowDiv = document.createElement("div");
-    rowDiv.style.display = "flex";
+    rowDiv.style.display = "grid";
+    rowDiv.style.gridTemplateColumns = `repeat(${maxLen}, 55px)`;
     rowDiv.style.justifyContent = "center";
     rowDiv.style.marginBottom = "5px";
+
+    // ⭐ QUAN TRỌNG: căn theo keyword
+    const startCol = keywordCol - q.keyIndex;
 
     for (let col = 0; col < maxLen; col++) {
 
@@ -305,13 +335,17 @@ function draw() {
       const back = document.createElement("div");
       back.className = "back";
 
-      // tính vị trí chữ thật trong answer
-      const start = Math.floor((maxLen - q.answer.length) / 2);
-      const index = col - start;
+      const letterIndex = col - startCol;
 
-      if (index >= 0 && index < q.answer.length) {
-        inner.id = `c-${row}-${index}`;
-        back.innerText = q.answer[index];
+      if (letterIndex >= 0 && letterIndex < q.answer.length) {
+        inner.id = `c-${row}-${letterIndex}`;
+        back.innerText = q.answer[letterIndex];
+
+        // highlight cột keyword
+        if (letterIndex === q.keyIndex) {
+          cell.classList.add("keyword-col");
+        }
+
       } else {
         front.style.visibility = "hidden";
         back.style.visibility = "hidden";
@@ -363,18 +397,6 @@ function updateKeyword(){
   document.getElementById("keyword").innerHTML = html;
 }
 
-//lật toàn bộ chữ keyword
-function revealKeyword(){
-  keywordOpened = true;
-
-  data.forEach((q,row)=>{
-    const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
-    if(inner) inner.classList.add("flip");
-  });
-
-  updateKeyword();
-  animateKeyword();
-}
 // Hiển thị danh sách player
 socket.on("playerList", (list)=>{
   const ul = document.getElementById("playerList");
