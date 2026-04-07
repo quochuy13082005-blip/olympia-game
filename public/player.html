@@ -1,93 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <title>Player</title>
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-    font-family: Arial, sans-serif;
-    color: white;
-    background: url('nen_game.jpg') no-repeat center center fixed;
-    background-size: cover;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* Buzz ở trên, guess ở dưới */
-    align-items: center;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  h1 {
-    font-size: 60px;
-    color: gold;
-    margin-top: 20px;
-    text-align: center;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  color: white;
+  background: url('nen_game.jpg') no-repeat center center fixed;
+  background-size: cover;
+}
 
-  h2 {
-    font-size: 30px;
-    margin-bottom: 10px;
-  }
+/* Layout chính */
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+}
 
-  #name {
-    font-size: 24px;
-    padding: 10px;
-    width: 60%;
-    max-width: 400px;
-    text-align: center;
-    border-radius: 8px;
-    border: none;
-  }
+/* Header */
+.header {
+  text-align: center;
+}
 
-  #buzzBtn {
-    font-size: 40px;
-    background: red;
-    color: white;
-    padding: 20px 40px;
-    border: none;
-    border-radius: 10px;
-    margin-top: 20px;
-    cursor: pointer;
-  }
+h1 {
+  font-size: 42px;
+  color: gold;
+  margin: 10px 0;
+}
 
-  #guessBtn {
-    font-size: 30px;
-    background: green;
-    color: white;
-    padding: 15px 30px;
-    border: none;
-    border-radius: 10px;
-    margin-bottom: 30px;
-    cursor: pointer;
-  }
+h2 {
+  font-size: 18px;
+  margin: 5px 0;
+  opacity: 0.9;
+}
 
-  /* Responsive cho điện thoại */
-  @media (max-width: 600px) {
-    h1 { font-size: 40px; }
-    h2 { font-size: 20px; }
-    #name { font-size: 20px; width: 80%; }
-    #buzzBtn { font-size: 30px; padding: 15px 30px; }
-    #guessBtn { font-size: 24px; padding: 12px 25px; }
-  }
+/* Input */
+#name {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px;
+  font-size: 18px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  text-align: center;
+}
+
+/* Button chung */
+button {
+  width: 100%;
+  max-width: 500px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* Buzz button */
+#buzzBtn {
+  font-size: 28px;
+  padding: 18px;
+  background: linear-gradient(45deg, red, darkred);
+}
+
+#buzzBtn:active {
+  transform: scale(0.95);
+}
+
+/* Guess button */
+#guessBtn {
+  font-size: 22px;
+  padding: 16px;
+  background: linear-gradient(45deg, green, darkgreen);
+  margin-bottom: 10px;
+}
+
+#guessBtn:active {
+  transform: scale(0.95);
+}
+
+/* Mobile tối ưu */
+@media (max-width: 600px) {
+  h1 { font-size: 34px; }
+  #buzzBtn { font-size: 24px; padding: 16px; }
+  #guessBtn { font-size: 20px; }
+}
+
+/* Hiệu ứng glow nhẹ */
+#buzzBtn {
+  box-shadow: 0 0 15px rgba(255,0,0,0.6);
+}
+
+#guessBtn {
+  box-shadow: 0 0 10px rgba(0,255,0,0.5);
+}
+
 </style>
 </head>
+
 <body>
 
-  <!-- Input tên -->
-<div>
-  <h1>OLYMPIA</h1>
-  <h2>ENTER NAME</h2>
-  <input id="name" placeholder="Your Name"><br><br>
+<div class="container">
+
+  <!-- TOP -->
+  <div class="header">
+    <h1>OLYMPIA</h1>
+    <h2>ENTER NAME</h2>
+    <input id="name" placeholder="Your Name">
+  </div>
+
+  <!-- MIDDLE -->
+  <button id="buzzBtn" onclick="buzz()">🔴 PRESS BUZZER</button>
+
+  <!-- BOTTOM -->
+  <button id="guessBtn" onclick="guessKeyword()">🎯 GUESS KEYWORD</button>
+
 </div>
-
-<!-- Button PRESS BUZZER ở trên -->
-<button id="buzzBtn" onclick="buzz()">🔴 PRESS BUZZER</button> 
-
-<!-- Button GUESS KEYWORD ở dưới -->
-<button id="guessBtn" onclick="guessKeyword()">🎯 GUESS KEYWORD</button> 
 
 <script>
 const socket = io();
@@ -95,17 +139,23 @@ const socket = io();
 // Bấm chuông
 function buzz(){
   const name = document.getElementById("name").value.trim();
-  if(!name) { alert("Enter name before pressing the buzzer!"); return; }
+  if(!name){
+    alert("Enter name before pressing the buzzer!");
+    return;
+  }
   socket.emit("buzz", name);
 }
 
 // Đoán từ khóa
 function guessKeyword(){
   const name = document.getElementById("name").value.trim();
-  if(!name) { alert("Enter your name before guessing!"); return; }
+  if(!name){
+    alert("Enter your name before guessing!");
+    return;
+  }
 
   socket.emit("playerGuess", { name: name, guess: "Đoán từ khóa" });
-  alert("🎯 Guess already submitted!!");
+  alert("🎯 Guess submitted!");
 }
 </script>
 

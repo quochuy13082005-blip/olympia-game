@@ -9,61 +9,98 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static("public"));
 
-// Load Excel
+// 🔐 PASSWORD HOST
+const HOST_PASSWORD = "123456";
+
+// 📊 Load Excel
 const wb = XLSX.readFile("questions.xlsx");
 const sheet = wb.Sheets[wb.SheetNames[0]];
 const crossword = XLSX.utils.sheet_to_json(sheet);
 
+// ===== STATE =====
 let buzzList = [];
 let isOpen = false;
+const players = {};
 
-const players = {}; // socket.id => name
+let currentHostId = null; // 🔥 CHỈ 1 HOST
+
+// ===== SOCKET =====
 io.on("connection", (socket) => {
 
-  // Mở/đóng buzz
+  socket.isHost = false;
+
+  // 🔐 LOGIN HOST
+  socket.on("hostLogin", (password, callback) => {
+    if(password === HOST_PASSWORD && !currentHostId){
+      socket.isHost = true;
+      currentHostId = socket.id;
+      console.log("✅ Host đăng nhập:", socket.id);
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+
+  // ===== BUZZ PLAYER =====
   socket.on("buzz", (name) => {
     if (!isOpen) return;
+
     if (!buzzList.find(u => u.id === socket.id)) {
       buzzList.push({ id: socket.id, name });
       io.emit("buzzUpdate", buzzList);
     }
-    // Lưu player
+
     players[socket.id] = name;
     io.emit("playerList", Object.values(players));
   });
 
+  // ===== 🔒 HOST CONTROL =====
   socket.on("openBuzz", () => {
+    if(socket.id !== currentHostId) return;
+
     buzzList = [];
     isOpen = true;
     io.emit("buzzUpdate", buzzList);
   });
 
   socket.on("closeBuzz", () => {
+    if(socket.id !== currentHostId) return;
     isOpen = false;
   });
 
-  // Cung cấp data câu hỏi
+  socket.on("revealRow", (row) => {
+    if(socket.id !== currentHostId) return;
+    io.emit("revealRow", row);
+  });
+
+  // ===== DATA =====
   socket.on("getCrossword", () => {
     socket.emit("crosswordData", crossword);
   });
 
-  // Lật hàng ô chữ
-  socket.on("revealRow", (row) => {
-    io.emit("revealRow", row);
-  });
-
-  // Player đoán từ khóa
+  // ===== PLAYER GUESS =====
   socket.on("playerGuess", ({ name, guess }) => {
     players[socket.id] = name;
     io.emit("playerGuess", { name, guess });
     io.emit("playerList", Object.values(players));
   });
 
-  // Player disconnect
+  // ===== DISCONNECT =====
   socket.on("disconnect", () => {
+
+    // ❌ nếu host thoát → reset quyền
+    if(socket.id === currentHostId){
+      console.log("❌ Host đã thoát");
+      currentHostId = null;
+    }
+
     delete players[socket.id];
+    buzzList = buzzList.filter(u => u.id !== socket.id);
+
     io.emit("playerList", Object.values(players));
+    io.emit("buzzUpdate", buzzList);
   });
+
 });
 
 const PORT = process.env.PORT || 3000;

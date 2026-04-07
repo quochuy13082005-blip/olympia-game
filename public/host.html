@@ -4,26 +4,210 @@
 <meta charset="UTF-8">
 <title>Olympia Game</title>
 <style>
-body { font-family: Arial; text-align: center; background:#111; color:white; }
-#grid { margin:20px auto; }
-.cell { width:50px; height:50px; perspective:1000px; margin:2px; }
-.inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:0.6s; }
-.inner.flip { transform:rotateY(180deg); }
-.front, .back { position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:22px; backface-visibility:hidden; }
-.front { background:#333; } .back { background:green; transform:rotateY(180deg); }
-button { margin:5px; padding:5px; }
-#questions div:hover { background:#333; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  color: white;
+  text-align: center;
+
+  /* 🌌 nền động */
+  background: linear-gradient(-45deg, #000000, #1a2a6c, #000000, #2b5876);
+  background-size: 400% 400%;
+  animation: gradientMove 12s ease infinite;
+}
+
+/* nền chuyển động */
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ánh sáng xoay */
+body::before {
+  content: "";
+  position: fixed;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.15), transparent 60%);
+  animation: rotateLight 25s linear infinite;
+  z-index: 0;
+}
+
+@keyframes rotateLight {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 🏆 TITLE */
+h1 {
+  font-size: 70px;
+  color: gold;
+  letter-spacing: 6px;
+  text-shadow:
+    0 0 10px gold,
+    0 0 30px orange,
+    0 0 60px yellow;
+}
+
+/* 📦 BOX */
+#questions, #playerList, #buzz {
+  background: rgba(0,0,0,0.6);
+  border: 1px solid gold;
+  border-radius: 12px;
+  padding: 10px;
+  margin: 15px auto;
+  max-width: 600px;
+  box-shadow: 0 0 15px rgba(255,215,0,0.4);
+}
+
+/* hover câu hỏi */
+#questions div:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* 🔘 BUTTON */
+button {
+  padding: 8px 16px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+
+  background: linear-gradient(45deg, gold, orange);
+  color: black;
+  font-weight: bold;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px gold;
+}
+
+/* 🧩 Ô chữ */
+.cell {
+  width: 55px;
+  height: 55px;
+  perspective: 1000px;
+  margin: 3px;
+}
+
+.inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: 0.6s;
+}
+
+.inner.flip {
+  transform: rotateY(180deg);
+}
+
+.front, .back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  backface-visibility: hidden;
+  border-radius: 6px;
+}
+
+/* mặt trước */
+.front {
+  background: linear-gradient(145deg, #222, #444);
+  border: 1px solid #888;
+}
+
+/* mặt sau */
+.back {
+  background: linear-gradient(145deg, green, limegreen);
+  transform: rotateY(180deg);
+  font-weight: bold;
+}
+
+/* 🔤 keyword */
+#keyword span {
+  display: inline-block;
+  padding: 6px;
+  margin: 3px;
+  font-size: 36px;
+  transition: 0.3s;
+}
+
+/* glow */
+.glow {
+  color: yellow;
+  text-shadow:
+    0 0 10px yellow,
+    0 0 25px gold,
+    0 0 50px orange;
+  transform: scale(1.3);
+}
+
+/* 🥇 fastest */
+.fastest {
+  color: yellow;
+  font-weight: bold;
+  animation: blink 0.6s infinite;
+  font-size: 20px;
+}
+
+@keyframes blink {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* 🔐 LOGIN BOX */
+#loginBox {
+  margin-top: 100px;
+}
+
+#loginBox input {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  margin: 10px;
+}
+
+#loginBox button {
+  font-size: 18px;
+}
+
 </style>
 </head>
 <body>
 
 <h1>🏆 Olympia</h1>
 
+<div id="loginBox">
+  <h2>HOST LOGIN</h2>
+  <input type="password" id="hostPass">
+  <button onclick="login()">Login</button>
+  <p id="msg"></p>
+</div>
+
+<div id="game" style="display:none;">
+
 <h3>QUESTION</h3>
 <div id="questions" style="max-width:600px;margin:auto;text-align:left"></div>
 
 <div id="grid"></div>
 <h2 id="keyword">________</h2>
+<button onclick="revealKeyword()">Show Keyword</button>
 <h2 id="guessDisplay" style="color:cyan"></h2>
 
 <br>
@@ -31,19 +215,33 @@ button { margin:5px; padding:5px; }
 <button onclick="closeBuzz()">BUZZER OFF </button> 
 <ul id="buzz"></ul>
 
-<h3>LIST OF MEMBERS </h3> //
+<h3>LIST OF MEMBERS </h3> 
 <ul id="playerList"></ul>
 
-<audio id="correctSound" src="correct.mp3"></audio>
-<audio id="wrongSound" src="wrong.mp3"></audio>
+<audio id="bgMusic" src="bg.mp3" loop></audio>
+<audio id="winMusic" src="win.mp3"></audio>
+<audio id="fastSound" src="fast.mp3"></audio>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 let data = [];
 let openedRows = [];
+let keywordOpened = false;
 
+//Login
+function login(){
+  const pass = document.getElementById("hostPass").value;
 
+  socket.emit("hostLogin", pass, (ok)=>{
+    if(ok){
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("game").style.display = "block";
+    }else{
+      alert("Sai mật khẩu hoặc đã có host!");
+    }
+  });
+}
 
 // Lấy dữ liệu
 socket.emit("getCrossword");
@@ -117,13 +315,24 @@ socket.on("revealRow",(row)=>{
 
 // Từ khóa
 function updateKeyword(){
-  let k = "";
+  let html = "";
+
   data.forEach((q,row)=>{
     const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
     const letter = inner?.querySelector(".back")?.innerText || "_";
-    k += letter;
+    html += `<span id="k-${row}">${letter}</span>`;
   });
-  document.getElementById("keyword").innerText = k;
+
+  document.getElementById("keyword").innerHTML = html;
+}
+
+//lật toàn bộ chữ keyword
+function revealKeyword(){
+  data.forEach((q,row)=>{
+    const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
+    if(inner) inner.classList.add("flip");
+  });
+  updateKeyword();
 }
 
 // Hiển thị danh sách player
@@ -148,13 +357,103 @@ socket.on("playerGuess",({name,guess})=>{
 
 // Buzz
 socket.on("buzzUpdate",(list)=>{
-  const ul=document.getElementById("buzz"); ul.innerHTML="";
-  list.forEach((u,i)=>{ ul.innerHTML+=`<li>${i+1}. ${u.name}</li>`; });
+  if(keywordOpened) return;
+
+  const ul = document.getElementById("buzz");
+  ul.innerHTML = "";
+
+  list.forEach((u,i)=>{
+    const li = document.createElement("li");
+    li.innerText = `${i+1}. ${u.name}`;
+
+    // 🥇 Người nhanh nhất
+    if(i === 0){
+      li.classList.add("fastest");
+    }
+
+    ul.appendChild(li);
+  });
 });
 
-function openBuzz(){ socket.emit("openBuzz"); }
+//Phát âm thanh đúng/sai khi show keyword
+function revealKeyword(){
+  keywordOpened = true;
+
+  data.forEach((q,row)=>{
+    const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
+    if(inner) inner.classList.add("flip");
+  });
+
+  updateKeyword();
+  animateKeyword(); // ✨ chạy sáng
+
+   const bg = document.getElementById("bgMusic");
+  const win = document.getElementById("winMusic");
+
+  bg.pause();
+  win.volume = 0.7;
+  win.play();
+
+  socket.emit("closeBuzz");
+}
+
+//Hiệu ứng chạy sáng 
+function animateKeyword(){
+  const letters = document.querySelectorAll("#keyword span");
+  let i = 0;
+
+  const interval = setInterval(()=>{
+    letters.forEach(l => l.classList.remove("glow"));
+
+    if(letters[i]){
+      letters[i].classList.add("glow");
+    }
+
+    i++;
+    if(i >= letters.length){
+      clearInterval(interval);
+    }
+  }, 200);
+}
+
+//nhạc nền
+document.body.addEventListener("click", () => {
+  const bg = document.getElementById("bgMusic");
+  bg.volume = 0.3;
+  bg.play();
+}, { once: true });
+
+function openBuzz(){ 
+  firstBuzzPlayed = false; // reset âm thanh
+  socket.emit("openBuzz"); 
+}
 function closeBuzz(){ socket.emit("closeBuzz"); }
 
+//phát âm thanh có người đầu tiên
+let firstBuzzPlayed = false;
+
+socket.on("buzzUpdate",(list)=>{
+  if(keywordOpened) return;
+
+  const ul = document.getElementById("buzz");
+  ul.innerHTML = "";
+
+  list.forEach((u,i)=>{
+    const li = document.createElement("li");
+    li.innerText = `${i+1}. ${u.name}`;
+
+    if(i === 0){
+      li.classList.add("fastest");
+
+      if(!firstBuzzPlayed){
+        document.getElementById("fastSound").play();
+        firstBuzzPlayed = true;
+      }
+    }
+
+    ul.appendChild(li);
+  });
+});
 </script>
 </body>
 </html>
