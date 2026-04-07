@@ -342,9 +342,9 @@ function draw() {
         back.innerText = q.answer[letterIndex];
 
         // highlight cột keyword
-        if (letterIndex === q.keyIndex) {
-          cell.classList.add("keyword-col");
-        }
+        //if (letterIndex === q.keyIndex) {
+          //cell.classList.add("keyword-col");
+        //}
 
       } else {
         front.style.visibility = "hidden";
@@ -444,6 +444,9 @@ function revealKeyword(){
   data.forEach((q,row)=>{
     const inner = document.getElementById(`c-${row}-${q.keyIndex}`);
     if(inner) inner.classList.add("flip");
+
+    const cell = inner.parentElement;
+      cell.classList.add("keyword-col");
   });
 
   updateKeyword();
