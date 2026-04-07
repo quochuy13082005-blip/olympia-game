@@ -154,7 +154,7 @@ function guessKeyword(){
     return;
   }
 
-  socket.emit("playerGuess", { name: name, guess: "Đoán từ khóa" });
+  socket.emit("playerGuess", { name: name, guess: "Keyword" });
   alert("🎯 Guess submitted!");
 }
 </script>
