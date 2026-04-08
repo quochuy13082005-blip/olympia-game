@@ -307,7 +307,8 @@ function draw() {
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  const maxLen = Math.max(...data.map(q => q.answer.length));
+ // const maxLen = Math.max(...data.map(q => q.answer.length));
+ const maxLen = Math.max(...data.map(q => q.answer.length)) + 10;
   const keywordCol = Math.floor(maxLen / 2);
 
   data.forEach((q, row) => {
@@ -318,7 +319,7 @@ function draw() {
     rowDiv.style.justifyContent = "center";
     rowDiv.style.marginBottom = "5px";
 
-    // ⭐ QUAN TRỌNG: căn theo keyword
+     // ⭐ QUAN TRỌNG: căn theo keyword 
     const startCol = keywordCol - q.keyIndex;
 
     for (let col = 0; col < maxLen; col++) {
