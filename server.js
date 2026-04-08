@@ -10,6 +10,10 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static("public"));
 
+app.get("/", (req, res) => {
+  res.send("Server đang chạy OK 🚀");
+});
+
 // 🔐 PASSWORD HOST
 const HOST_PASSWORD = "123456";
 
