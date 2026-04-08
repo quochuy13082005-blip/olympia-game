@@ -9,9 +9,12 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static("public"));
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
 app.get("/", (req, res) => {
-  res.send("Server đang chạy OK 🚀");
+  res.status(200).end();
 });
 
 // 🔐 PASSWORD HOST
