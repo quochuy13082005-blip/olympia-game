@@ -1,3 +1,4 @@
+console.log("🚀 Server starting...");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -13,9 +14,33 @@ app.use(express.static("public"));
 const HOST_PASSWORD = "123456";
 
 // 📊 Load Excel
-const wb = XLSX.readFile("questions.xlsx");
-const sheet = wb.Sheets[wb.SheetNames[0]];
-const crossword = XLSX.utils.sheet_to_json(sheet);
+//const wb = XLSX.readFile("questions.xlsx");
+//const sheet = wb.Sheets[wb.SheetNames[0]];
+//const crossword = XLSX.utils.sheet_to_json(sheet);
+const fs = require("fs");
+const path = require("path");
+
+let crossword = [];
+
+try {
+  const filePath = path.join(__dirname, "questions.xlsx");
+
+  console.log("📁 Đường dẫn:", filePath);
+  console.log("📂 Files:", fs.readdirSync(__dirname));
+
+  if (!fs.existsSync(filePath)) {
+    console.error("❌ KHÔNG có questions.xlsx");
+  } else {
+    const wb = XLSX.readFile(filePath);
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    crossword = XLSX.utils.sheet_to_json(sheet);
+
+    console.log("✅ Load Excel:", crossword.length);
+  }
+
+} catch (err) {
+  console.error("❌ Lỗi Excel:", err.message);
+}
 
 // ===== STATE =====
 let buzzList = [];
